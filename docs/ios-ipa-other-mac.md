@@ -1,6 +1,6 @@
 # 另一台 Mac 打包 iOS IPA（给打包机上的 agent）
 
-把这份文档整份交给 **有完整 Xcode 的那台 Mac** 上的 agent。开发机只有 Command Line Tools，编不出 IPA。打包机 **没有这块 T7 移动硬盘**，不要去找 `/Volumes/T7/...`。源码已经打成压缩包放在开发机本机桌面，用 AirDrop / U 盘 / 局域网拷过去。
+把这份文档整份交给 **有完整 Xcode 的那台 Mac** 上的 agent。开发机只有 Command Line Tools，编不出 IPA。打包机 **没有这块 T7 移动硬盘**，不要去找 `/Volumes/T7/...`。源码用 git 拉分支 `dedicated-line-ipa`（见第 1 节）；拉不到网再用桌面压缩包。
 
 Mini 上的 DSH Host 配置见 [frp-mac-mini-agent.md](frp-mac-mini-agent.md)。官方构建说明见 [ios-build-and-release.md](ios-build-and-release.md)。冲突时以本文为准：本文描述的是带专线补丁的本地树，不是上游 `main`。
 
