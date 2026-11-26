@@ -88120,10 +88120,15 @@ function resolveConfig(input4 = {}, env = process.env) {
   const codexEnabled = codexBackend?.enabled ?? parsed.codex?.enabled ?? true;
   const acpEnabled = parsed.acp?.enabled ?? true;
   const reconnect = typeof parsed.reconnect === "object" ? parsed.reconnect : {};
-  const configuredServerUrl = parsed.serverUrl ?? env.DSH_REMOTE_SERVER;
-  const httpServerAllowlist = normalizeHttpServerAllowlist(
-    parsed.httpServerAllowlist ?? parseHttpServerAllowlistEnv(env.DSH_REMOTE_HTTP_SERVER_ALLOWLIST)
+  const configuredServerUrl = firstConfiguredUrl(
+    parsed.serverUrl,
+    env.DSH_REMOTE_SERVER,
+    env.DSH_REMOTE_TUNNEL_URL
   );
+  const httpServerAllowlist = normalizeHttpServerAllowlist([
+    ...parsed.httpServerAllowlist ?? parseHttpServerAllowlistEnv(env.DSH_REMOTE_HTTP_SERVER_ALLOWLIST) ?? [],
+    ...httpOriginAllowlistHost(configuredServerUrl)
+  ]);
   const serverUrl = configuredServerUrl === void 0 ? void 0 : normalizeServerUrl(configuredServerUrl, httpServerAllowlist);
   const initialDelayMs = reconnect.initialDelayMs ?? 4e3;
   const maxDelayMs = reconnect.maxDelayMs ?? 3e4;
@@ -88179,6 +88184,27 @@ function resolveConfig(input4 = {}, env = process.env) {
   };
 }
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+function firstConfiguredUrl(...values) {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed !== "") return trimmed;
+  }
+  return void 0;
+}
+function httpOriginAllowlistHost(value) {
+  if (value === void 0) return [];
+  let url2;
+  try {
+    url2 = new URL(value);
+  } catch {
+    return [];
+  }
+  if (url2.protocol !== "http:") return [];
+  if (isPrivateNetworkHostname(url2.hostname)) return [];
+  const host = url2.hostname.startsWith("[") && url2.hostname.endsWith("]") ? url2.hostname.slice(1, -1) : url2.hostname;
+  return host === "" ? [] : [host];
+}
 function isPrivateIpv6(hostname6) {
   const host = (hostname6.startsWith("[") && hostname6.endsWith("]") ? hostname6.slice(1, -1) : hostname6).toLowerCase();
   if (!host.includes(":") || !/^[0-9a-f:]+$/.test(host)) return false;
@@ -88199,7 +88225,7 @@ function normalizeServerUrl(value, httpServerAllowlist = []) {
   const url2 = new URL(value);
   const privateHttp = url2.protocol === "http:" && (isPrivateNetworkHostname(url2.hostname) || matchesHttpServerAllowlist(url2.hostname, httpServerAllowlist));
   if (url2.protocol !== "https:" && !privateHttp) {
-    throw new TypeError("serverUrl must use HTTPS (HTTP is allowed only for localhost or private-network addresses)");
+    throw new TypeError("serverUrl must use HTTPS (HTTP is allowed for localhost, private networks, or an explicit public tunnel origin)");
   }
   if (url2.username !== "" || url2.password !== "") {
     throw new TypeError("serverUrl must not contain credentials");

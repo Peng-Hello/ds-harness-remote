@@ -70,8 +70,6 @@ describe('plugin config', () => {
   })
 
   it('allows HTTP on private networks while rejecting insecure public servers and embedded credentials', () => {
-    expect(() => resolveConfig({ serverUrl: 'http://remote.example.com' })).toThrow(/HTTPS/)
-    expect(() => resolveConfig({ serverUrl: 'http://100.128.0.1:8080' })).toThrow(/HTTPS/)
     expect(() => resolveConfig({ serverUrl: 'https://user:password@remote.example.com' })).toThrow(/credentials/)
     expect(() => resolveConfig({ serverUrl: 'https://remote.example.com?token=secret' })).toThrow(/query parameters/)
     expect(() => resolveConfig({ serverUrl: 'https://remote.example.com/api' })).toThrow(/without a path/)
@@ -80,10 +78,9 @@ describe('plugin config', () => {
     expect(resolveConfig({ serverUrl: 'http://100.79.68.68:8080' }).serverUrl).toBe('http://100.79.68.68:8080')
     expect(resolveConfig({ serverUrl: 'http://[fd00:1234::1]:8080' }).serverUrl).toBe('http://[fd00:1234::1]:8080')
     expect(resolveConfig({ serverUrl: 'http://[fe80::1]:8080' }).serverUrl).toBe('http://[fe80::1]:8080')
-    expect(() => resolveConfig({ serverUrl: 'http://[2001:4860:4860::8888]:8080' })).toThrow(/HTTPS/)
     expect(resolveConfig({ serverUrl: 'http://11.23.4.5:8080', httpServerAllowlist: ['11.0.0.0/8'] })).toMatchObject({
       serverUrl: 'http://11.23.4.5:8080',
-      httpServerAllowlist: ['11.0.0.0/8'],
+      httpServerAllowlist: ['11.0.0.0/8', '11.23.4.5'],
     })
     expect(resolveConfig({ serverUrl: 'http://[2001:db8::5]:8080', httpServerAllowlist: ['2001:db8::/32'] }).serverUrl)
       .toBe('http://[2001:db8::5]:8080')
@@ -92,11 +89,34 @@ describe('plugin config', () => {
       DSH_REMOTE_HTTP_SERVER_ALLOWLIST: '11.0.0.0/8, 2001:db8::/32',
     })).toMatchObject({
       serverUrl: 'http://11.23.4.5:8080',
-      httpServerAllowlist: ['11.0.0.0/8', '2001:db8::/32'],
+      httpServerAllowlist: ['11.0.0.0/8', '2001:db8::/32', '11.23.4.5'],
     })
     expect(() => resolveConfig({ serverUrl: 'http://11.23.4.5:8080', httpServerAllowlist: ['11.0.0.0/33'] })).toThrow(/invalid host or CIDR/)
     expect(() => resolveConfig({ serverUrl: 'http://11.23.4.5:8080', httpServerAllowlist: ['11.0.0.0/8'] })).not.toThrow()
     expect(normalizeServerUrl('https://REMOTE.example.com/')).toBe('https://remote.example.com')
+  })
+
+  it('allowlists an explicit public HTTP tunnel origin as serverUrl', () => {
+    expect(resolveConfig({ serverUrl: 'http://129.204.31.210:8080' })).toMatchObject({
+      serverUrl: 'http://129.204.31.210:8080',
+      httpServerAllowlist: ['129.204.31.210'],
+    })
+    expect(resolveConfig({ serverUrl: 'http://remote.example.com:8080' })).toMatchObject({
+      serverUrl: 'http://remote.example.com:8080',
+      httpServerAllowlist: ['remote.example.com'],
+    })
+    expect(resolveConfig({ serverUrl: 'http://[2001:4860:4860::8888]:8080' }).serverUrl)
+      .toBe('http://[2001:4860:4860::8888]:8080')
+    expect(resolveConfig({}, { DSH_REMOTE_TUNNEL_URL: 'http://129.204.31.210:8080' })).toMatchObject({
+      serverUrl: 'http://129.204.31.210:8080',
+      httpServerAllowlist: ['129.204.31.210'],
+    })
+    expect(resolveConfig({}, {
+      DSH_REMOTE_SERVER: 'https://dsh.r2049.cn',
+      DSH_REMOTE_TUNNEL_URL: 'http://129.204.31.210:8080',
+    }).serverUrl).toBe('https://dsh.r2049.cn')
+    expect(resolveConfig({ serverUrl: 'https://dsh.r2049.cn' }).httpServerAllowlist).toEqual([])
+    expect(() => normalizeServerUrl('http://129.204.31.210:8080')).toThrow(/HTTPS/)
   })
 
   it('rejects an inverted reconnect range', () => {

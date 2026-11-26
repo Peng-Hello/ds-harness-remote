@@ -47,7 +47,7 @@ export function normalizeServerUrl(input: string): string {
     throw new Error(zhCN.validation.serverInvalid)
   }
 
-  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isPrivateHostname(url.hostname))) {
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
     throw new Error(zhCN.validation.httpsRequired)
   }
   if (url.username || url.password || url.search || url.hash) {

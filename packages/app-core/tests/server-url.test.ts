@@ -7,10 +7,12 @@ describe('server URL handling', () => {
     expect(websocketUrl('https://remote.example.com')).toBe('wss://remote.example.com/ws/v1/connect')
   })
 
-  it('allows cleartext only for local development', () => {
+  it('allows cleartext for local development and an explicit public HTTP tunnel', () => {
     expect(normalizeServerUrl('http://10.0.2.2:8080')).toBe('http://10.0.2.2:8080')
-    expect(() => normalizeServerUrl('http://remote.example.com')).toThrow(/HTTPS/)
-    expect(() => normalizeServerUrl('http://8.8.8.8')).toThrow(/HTTPS/)
+    expect(normalizeServerUrl('http://remote.example.com')).toBe('http://remote.example.com')
+    expect(normalizeServerUrl('http://8.8.8.8')).toBe('http://8.8.8.8')
+    expect(normalizeServerUrl('http://129.204.31.210:8080')).toBe('http://129.204.31.210:8080')
+    expect(() => normalizeServerUrl('ftp://remote.example.com')).toThrow(/HTTPS/)
   })
 
   it('allows cleartext for private LAN and VPN addresses', () => {
@@ -22,7 +24,7 @@ describe('server URL handling', () => {
     expect(normalizeServerUrl('http://[::1]:8080')).toBe('http://[::1]:8080')
     expect(normalizeServerUrl('http://[fd00:1234::1]:8080')).toBe('http://[fd00:1234::1]:8080')
     expect(normalizeServerUrl('http://[fe80::1]:8080')).toBe('http://[fe80::1]:8080')
-    expect(() => normalizeServerUrl('http://[2001:4860:4860::8888]:8080')).toThrow(/HTTPS/)
+    expect(normalizeServerUrl('http://[2001:4860:4860::8888]:8080')).toBe('http://[2001:4860:4860::8888]:8080')
   })
 
   it('parses server deep links without pairing codes', () => {

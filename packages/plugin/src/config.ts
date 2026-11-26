@@ -16,7 +16,11 @@ export interface Config {
   enabled?: boolean
   role?: 'host' | 'client' | 'both'
   serverUrl?: string
-  /** Additional hosts or CIDR ranges that may use HTTP for a self-hosted Server. */
+  /**
+   * Additional hosts or CIDR ranges that may use HTTP for a self-hosted Server.
+   * A public HTTP `serverUrl` / `DSH_REMOTE_TUNNEL_URL` (for example an frp
+   * origin such as `http://203.0.113.10:8080`) also allowlists its own host.
+   */
   httpServerAllowlist?: string[]
   deviceName?: string
   terminal?: { enabled?: boolean }
@@ -217,10 +221,15 @@ export function resolveConfig(input: ConfigInput = {}, env: NodeJS.ProcessEnv = 
   const codexEnabled = codexBackend?.enabled ?? parsed.codex?.enabled ?? true
   const acpEnabled = parsed.acp?.enabled ?? true
   const reconnect = typeof parsed.reconnect === 'object' ? parsed.reconnect : {}
-  const configuredServerUrl = parsed.serverUrl ?? env.DSH_REMOTE_SERVER
-  const httpServerAllowlist = normalizeHttpServerAllowlist(
-    parsed.httpServerAllowlist ?? parseHttpServerAllowlistEnv(env.DSH_REMOTE_HTTP_SERVER_ALLOWLIST),
+  const configuredServerUrl = firstConfiguredUrl(
+    parsed.serverUrl,
+    env.DSH_REMOTE_SERVER,
+    env.DSH_REMOTE_TUNNEL_URL,
   )
+  const httpServerAllowlist = normalizeHttpServerAllowlist([
+    ...(parsed.httpServerAllowlist ?? parseHttpServerAllowlistEnv(env.DSH_REMOTE_HTTP_SERVER_ALLOWLIST) ?? []),
+    ...httpOriginAllowlistHost(configuredServerUrl),
+  ])
   const serverUrl = configuredServerUrl === undefined ? undefined : normalizeServerUrl(configuredServerUrl, httpServerAllowlist)
   const initialDelayMs = reconnect.initialDelayMs ?? 4_000
   const maxDelayMs = reconnect.maxDelayMs ?? 30_000
@@ -284,6 +293,37 @@ export function resolveConfig(input: ConfigInput = {}, env: NodeJS.ProcessEnv = 
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 
+function firstConfiguredUrl(...values: Array<string | undefined>): string | undefined {
+  for (const value of values) {
+    if (typeof value !== 'string') continue
+    const trimmed = value.trim()
+    if (trimmed !== '') return trimmed
+  }
+  return undefined
+}
+
+/**
+ * Public HTTP Server origins are otherwise rejected. When the user explicitly
+ * configures that origin as `serverUrl` (or `DSH_REMOTE_TUNNEL_URL`), allow
+ * HTTP for that host only so an frp / self-hosted public IP can be used
+ * without a separate CIDR allowlist.
+ */
+function httpOriginAllowlistHost(value: string | undefined): string[] {
+  if (value === undefined) return []
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return []
+  }
+  if (url.protocol !== 'http:') return []
+  if (isPrivateNetworkHostname(url.hostname)) return []
+  const host = url.hostname.startsWith('[') && url.hostname.endsWith(']')
+    ? url.hostname.slice(1, -1)
+    : url.hostname
+  return host === '' ? [] : [host]
+}
+
 function isPrivateIpv6(hostname: string): boolean {
   const host = (hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname).toLowerCase()
   if (!host.includes(':') || !/^[0-9a-f:]+$/.test(host)) return false
@@ -314,7 +354,7 @@ export function normalizeServerUrl(value: string, httpServerAllowlist: readonly 
   const privateHttp = url.protocol === 'http:'
     && (isPrivateNetworkHostname(url.hostname) || matchesHttpServerAllowlist(url.hostname, httpServerAllowlist))
   if (url.protocol !== 'https:' && !privateHttp) {
-    throw new TypeError('serverUrl must use HTTPS (HTTP is allowed only for localhost or private-network addresses)')
+    throw new TypeError('serverUrl must use HTTPS (HTTP is allowed for localhost, private networks, or an explicit public tunnel origin)')
   }
   if (url.username !== '' || url.password !== '') {
     throw new TypeError('serverUrl must not contain credentials')

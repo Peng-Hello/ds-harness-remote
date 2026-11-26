@@ -11,7 +11,7 @@
   "command.addWorkspace": "DS Harness Remote Add Workspace",
   "command.newSession": "DS Harness Remote New Session",
   "command.openSession": "DS Harness Remote Open Session",
-  "configuration.serverUrl": "HTTPS URL of the DS Harness Remote server.",
+  "configuration.serverUrl": "HTTP or HTTPS URL of the DS Harness Remote server, including an frp tunnel origin.",
   "configuration.forceRelay": "Use the authenticated relay instead of trying peer-to-peer transports.",
   "view.signIn": "Sign In"
 }

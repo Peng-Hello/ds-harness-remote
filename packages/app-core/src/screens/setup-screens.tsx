@@ -41,8 +41,11 @@ import { strings as zhCN, type LanguagePreference } from '../locales/i18n'
 import type { ActivityDockMode, ThemePreference } from '../ui/theme'
 import type { BusySendMode, QuickPromptActionMode } from '../services/storage'
 
-/** Default DSH Remote Server; a build can override it via EXPO_PUBLIC_DSH_REMOTE_SERVER. */
-const defaultServerUrl = 'https://dsh.r2049.cn'
+/** Official hosted Server. */
+const officialServerUrl = 'https://dsh.r2049.cn'
+/** Self-hosted / frp dedicated line. A build can override it via EXPO_PUBLIC_DSH_REMOTE_SERVER. */
+const dedicatedLineUrl = process.env.EXPO_PUBLIC_DSH_REMOTE_SERVER?.trim() || 'http://129.204.31.210:8080'
+const defaultServerUrl = dedicatedLineUrl
 const updateUrl = 'https://github.com/liguobao/ds-harness-remote/releases/latest'
 const testFlightUrl = 'https://testflight.apple.com/join/aSkJfmUJ'
 const releaseApiUrl = 'https://api.github.com/repos/liguobao/ds-harness-remote/releases/latest'
@@ -636,7 +639,23 @@ export function ServerSetupScreen({ onComplete, onBack, onMore, serverExpanded, 
                   setShowQr(false)
                   setServerDraft(value)
                   setServerError(undefined)
-                }} editable={!busy && !oauthFlowBusy} autoCapitalize="none" autoCorrect={false} keyboardType="url" hint={zhCN.setup.switchServerHint} placeholder="https://remote.example.com" />
+                }} editable={!busy && !oauthFlowBusy} autoCapitalize="none" autoCorrect={false} keyboardType="url" hint={zhCN.setup.serverHint} placeholder={dedicatedLineUrl} />
+                <View style={styles.serverActions}>
+                  <View style={styles.flex}>
+                    <Button label={zhCN.setup.dedicatedLine} variant="secondary" disabled={busy || oauthFlowBusy} onPress={() => {
+                      qrRun.current += 1
+                      setServerDraft(dedicatedLineUrl)
+                      setServerError(undefined)
+                    }} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Button label={zhCN.setup.officialServer} variant="secondary" disabled={busy || oauthFlowBusy} onPress={() => {
+                      qrRun.current += 1
+                      setServerDraft(officialServerUrl)
+                      setServerError(undefined)
+                    }} />
+                  </View>
+                </View>
                 {serverError !== undefined && <Text accessibilityRole="alert" style={styles.preferenceError}>{serverError}</Text>}
                 <View style={styles.serverActions}>
                   <View style={styles.flex}>

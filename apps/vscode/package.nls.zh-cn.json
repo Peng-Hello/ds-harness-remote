@@ -11,7 +11,7 @@
   "command.addWorkspace": "DS Harness Remote 添加工作区",
   "command.newSession": "DS Harness Remote 新建对话",
   "command.openSession": "DS Harness Remote 打开对话",
-  "configuration.serverUrl": "DS Harness Remote 服务的 HTTPS 地址。",
+  "configuration.serverUrl": "DS Harness Remote 服务地址，支持 HTTPS，以及 HTTP 内网穿透 / 自建 origin。",
   "configuration.forceRelay": "只使用已认证的服务器转发，不尝试 P2P 连接。",
   "view.signIn": "登录"
 }

@@ -18,6 +18,7 @@
         "NSCameraUsageDescription": "Allow DSH Remote to take photos that you choose to send in a conversation.",
         "NSMicrophoneUsageDescription": "DSH Remote does not capture or transmit audio. Microphone access is declared because the WebRTC peer-to-peer framework links the system microphone APIs.",
         "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
         },
         "ITSAppUsesNonExemptEncryption": false,

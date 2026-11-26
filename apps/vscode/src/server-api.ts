@@ -145,7 +145,7 @@ export class ServerApi {
 
 function normalizeUrl(value: string): string {
   const url = new URL(value.trim())
-  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(url.hostname))) throw new Error('Use HTTPS (HTTP is allowed only for localhost).')
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Use HTTP or HTTPS.')
   return url.origin
 }
 

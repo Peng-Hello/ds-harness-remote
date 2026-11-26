@@ -52,10 +52,15 @@ Client 与 Host 通过 HTTPS 完成：
 - 受 membership 保护的 identity key 查询；
 - 按 `connectionId` 获取短期 ICE/TURN 配置。
 
-生产 Server 必须使用 HTTPS；只有 localhost 开发环境允许 HTTP。Token 放在认证 header 或请求体中，不能进入 URL、日志或 WebRTC signaling。
+生产 Server 应使用 HTTPS。localhost、RFC1918/链路本地/CGNAT，以及**显式配置的** HTTP
+`serverUrl`（例如 frp 公网地址 `http://203.0.113.10:8080`）可以使用 HTTP。
+Token 放在认证 header 或请求体中，不能进入 URL、日志或 WebRTC signaling。
 
-自建 Server 如果运行在企业内网的非标准地址段，可以通过 Host 配置 `httpServerAllowlist`
-放行 HTTP。配置值支持 IPv4/IPv6 CIDR、单个 IP 和精确主机名，例如：
+把 `serverUrl` 设为公网 HTTP origin 时，插件会自动把该主机名加入 HTTP 白名单，无需再写 CIDR。
+也可用环境变量 `DSH_REMOTE_TUNNEL_URL`（`serverUrl` / `DSH_REMOTE_SERVER` 优先）。
+
+自建 Server 如果还要放行其它 HTTP 主机，可以通过 `httpServerAllowlist`
+配置。配置值支持 IPv4/IPv6 CIDR、单个 IP 和精确主机名，例如：
 
 ```json
 {

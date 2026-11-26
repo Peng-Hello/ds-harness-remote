@@ -3,7 +3,10 @@ import type { Context, Volatile } from '@deepseek-ai/cordis'
 export interface Config {
   enabled?: boolean
   role?: 'host' | 'client' | 'both'
+  /** HTTPS origin, or an explicit HTTP tunnel/self-hosted origin such as `http://203.0.113.10:8080`. */
   serverUrl?: string
+  /** Extra HTTP hosts/CIDRs. A public HTTP `serverUrl` already allowlists its own host. */
+  httpServerAllowlist?: string[]
   deviceName?: string
   terminal?: { enabled?: boolean }
   loopback?: { ports?: number[] }
