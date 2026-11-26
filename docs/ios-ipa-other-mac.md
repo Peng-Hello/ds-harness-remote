@@ -18,17 +18,32 @@ http://129.204.31.210:8080
 
 不要 `git clone` 上游，不要 `npm i ds-harness-remote`，不要官方 TestFlight。官方包的 ATS 会拦住公网 HTTP 专线。
 
-打包机没有 T7。开发机本机桌面已经打好包（约 13 MB，不含 `node_modules` / `.git` / Pods）：
+打包机没有 T7。专线补丁已经推到公开仓库分支 `dedicated-line-ipa`，打包机直接拉这个分支，不要拉 `main`。
+
+```sh
+git clone --branch dedicated-line-ipa --single-branch \
+  https://github.com/Peng-Hello/ds-harness-remote.git ~/src/ds-harness-remote
+cd ~/src/ds-harness-remote
+```
+
+已经 clone 过 `main` 的：
+
+```sh
+cd ~/src/ds-harness-remote
+git fetch origin dedicated-line-ipa
+git checkout dedicated-line-ipa
+```
+
+仓库地址：https://github.com/Peng-Hello/ds-harness-remote  
+分支：`dedicated-line-ipa`（commit `c68df408`）
+
+拉不到网时再用开发机本机桌面的压缩包（AirDrop / U 盘）：
 
 ```text
 /Users/ginpang/Desktop/dsh-remote-ipa-src.tar.gz
 /Users/ginpang/Desktop/ios-ipa-other-mac.md
 /Users/ginpang/Desktop/frp-mac-mini-agent.md
 ```
-
-用 AirDrop、U 盘或局域网把这三个文件拷到打包机，例如放到 `~/Downloads/`。不要去挂 T7，也不要 `git clone` 上游。
-
-打包机解压：
 
 ```sh
 mkdir -p ~/src
